@@ -1,110 +1,79 @@
-# Flight Delay Analysis: Understanding Causes, Patterns, and Propagation
+# Visualizing Flight Delays and Their Causes
 
-**Group Members:** Yuxuan, Nora, Rosa
+## Topic Goals and Research Questions
 
----
+We propose an interactive visualization dashboard exploring U.S. domestic flight delays across airlines, airports, and seasons. The project will examine reported delay causes and investigate how delays persist, worsen, or recover across consecutive flights operated by the same aircraft.
 
-## 1. Topic, Goals, and Questions
+Our primary audience is travelers seeking to understand disruptions and compare historical flight reliability. A second audience includes airline, airport, and government administrators interested in operational patterns. The dashboard will support informed exploration without presenting historical averages as predictions for individual journeys.
 
-Flight delays frustrate travelers and challenge airline operations. Understanding when, where, and why delays occur—and how they cascade through the network—can help both travelers and industry stakeholders make better decisions.
+Our questions are: Which airlines and airports experience higher delay rates? How do delays vary seasonally? Which reported causes contribute most to delay frequency and duration? How are weather-related delays associated with other categories? Where do delays accumulate or recover along aircraft journeys?
 
-**Topic:** We explore U.S. domestic flight delays, including their distribution across airlines, airports, and seasons; underlying causes; and the "butterfly effect" of delay propagation between sequential flights.
+## Datasets and Preparation
 
-**Goals:** For the general public, we provide a comprehensive understanding of delay reasons to inform flight selection. For airline administrators and policymakers, we reveal systemic patterns for improving the flight system.
+Our main source is the [Bureau of Transportation Statistics Airline On-Time Statistics and Delay Causes](https://www.transtats.bts.gov/ot_delay/ot_delaycause1.asp). We will download CSV data and initially target 2020–2025, adjusting the scope after checking completeness. The working dataset should contain more than 10,000 carrier–airport–month records; these are aggregated observations, not individual flights.
 
-**Audience:** Travelers, aviation analysts, airline operations managers, and transportation policymakers.
+Key attributes include year, month, carrier, airport, arrival-flight totals, delayed-arrival totals, and counts and minutes attributed to carrier, weather, National Aviation System (NAS), security, and late-aircraft causes. An airport coordinate reference table will support mapping. We will obtain separate flight-level records containing aircraft tail numbers, origin and destination airports, timestamps, and delays for the propagation analysis, initially exploring 2020–2022.
 
-**Research Questions:**
-- How do delays vary across airlines, airports, and seasons?
-- What are the primary delay causes, and how do they differ across carriers and airports?
-- Which airports are most vulnerable to weather-related delays?
-- How do delays propagate through the airport network, and which airports are critical hubs?
+Preparation will include checking duplicates, standardizing identifiers, documenting missing values, and validating denominators. We will sum delayed arrivals and arrival totals before calculating rates, avoiding unweighted averages across differently sized groups. Cancellations and diversions will be reported separately where available, with metric definitions made explicit. Flight-level timestamps will be standardized across time zones before connecting aircraft journeys.
 
----
+[NOAA Climate Data Online](https://www.ncei.noaa.gov/cdo-web/) is a possible supplementary source. Weather integration remains optional until suitable station coverage and temporal resolution are confirmed. Any matching procedure will document station distance, time windows, and missing observations.
 
-## 2. Dataset(s)
+## Analysis and Implementation
 
-### Primary: BTS Airline On-Time Statistics and Delay Causes
-- **Source:** U.S. DOT Bureau of Transportation Statistics (BTS), tracking domestic flight performance since 2003.
-- **Acquisition:** Download CSV files from the BTS TranStats portal.
-- **Processing:** Filter to 2018–2026; remove missing values; standardize codes; compute delay rates and cause percentages.
-- **Size:** ~500,000 records (carrier-airport-month) with 25 variables.
-- **Key Attributes:** `year`, `month`, `carrier_name`, `airport`, `arr_flights`, `arr_del15`, and five cause counts (`carrier_ct`, `weather_ct`, `nas_ct`, `security_ct`, `late_aircraft_ct`) with delay minutes.
-- **Link:** https://www.transtats.bts.gov/ot_delay/ot_delaycause1.asp
+We will use Python and pandas for preparation, and JavaScript, D3.js, HTML, and CSS for the dashboard. Prepared CSV files will be loaded with `d3.csv()`. Shared airline, airport, and date filters will connect comparisons across views, while tooltips explain values and denominators.
 
-### Supplementary: Airport Locations
-- **Source:** BTS/FAA reference tables.
-- **Size:** ~400 U.S. airports with coordinates.
-- **Link:** https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGJ
+Delay rate will be calculated as `sum(arr_del15) / sum(arr_flights)`. We will verify the arrival-total definition before labeling its complement as an on-time rate. Cause comparisons will distinguish attributed counts from delay minutes and account for fractional attribution. Associations between categories will be treated as exploratory evidence rather than proof of causation.
 
-### Optional: NOAA Climate Data
-- **Source:** NCEI Climate Data Online.
-- **Purpose:** Meteorological context. We rely primarily on BTS weather delay fields due to difficulty matching hourly weather to airports.
-- **Link:** https://www.ncei.noaa.gov/cdo-web/
+## Visualization Designs
 
----
+### 1 Airline Performance Scatter Plot
 
-## 3. Analysis and Visualization Methods
+Each point represents an airline, with arrival volume on the horizontal axis and on-time rate on the vertical axis. Tooltips show totals and rates. This view supports reliability comparisons while making differences in operational scale visible.
 
-We use JavaScript, D3.js, HTML, and CSS for interactive visualization, with Python for initial data cleaning.
+![v1](pic/v1)
 
-**Topic 1 — Airline On-Time Performance:** Group data by `carrier_name`, compute delay rate = `arr_del15` / `arr_flights`. *Technique:* Scatter plot (total flights vs. on-time rate). *Task:* Comparison. *Question:* Which airlines perform best and worst?
+### 2 Airport Delay Map
 
-**Topic 2 — Airport Delay Geography:** Calculate airport-level delay rates; merge with lat/lon coordinates. *Technique:* Interactive U.S. map with proportional symbols (color = delay rate, size = volume). *Task:* Geographic exploration. *Question:* How do delay rates vary regionally, and which airports are outliers?
+A U.S. proportional-symbol map will encode airport flight volume through marker size and delay rate through color. Hovering reveals airport details; selecting an airport filters related views. This design helps users locate geographic patterns and unusually high or low delay rates.
 
-**Topic 3 — Seasonal Trends:** Aggregate monthly delay rates. *Technique:* Line chart (month/year vs. delay rate). *Task:* Trend identification. *Question:* Are there recurring seasonal patterns in delays?
+![v2](pic/v2)
 
-**Topic 4 — Delay Cause Dashboard:** Decompose delays into five causes for the top 10 busiest airports. *Technique:* Interactive dashboard with linked views—KPI cards, 100% stacked horizontal bars (color saturation = absolute intensity), detail panel, and monthly trend chart. Clicking an airport updates all views; users can sort by total delay, weather %, or late-aircraft %. *Task:* Part-to-whole comparison and filtering. *Question:* What are the dominant causes, and how do profiles differ across busy airports?
+### 3 Monthly Delay Line Chart
 
-**Topic 5 — Weather Factor:** Aggregate `weather_ct` by airport and month. *Technique:* Dual parallel coordinates. Plot (1) profiles airports across Total Flights, Delay Rate, Avg Delay, Weather Delay %, and Late Aircraft % (color = delay rate). Plot (2) compares Total, Weather, Carrier, NAS, and Late Aircraft delays (color = weather/total ratio). *Task:* Multi-dimensional comparison and outlier detection. *Question:* Which airports are disproportionately affected by weather?
+A chronological line chart will show monthly delay rates, preserving year and month rather than collapsing observations into four seasons. Airline and airport filters will support comparisons. Repeated peaks across years will help users investigate seasonal patterns and distinguish them from isolated disruptions.
 
-**Topic 6 — Delay Propagation:** Model airports as nodes and routes as directed edges. *Technique:* Force-directed network graph (edge width/color = propagated delay severity). *Task:* Relationship discovery. *Question:* How do delays cascade, and which airports are propagation hubs?
+![v3](pic/v3)
 
----
+### 4 Delay Cause Stacked Bars
 
-## 4. Visualization Sketches or References
+A 100% stacked horizontal bar chart will compare five reported causes across the ten busiest airports in the selected period. Users can switch between attributed counts and delay minutes, sort airports, and inspect linked details and monthly trends. This view reveals whether frequent causes also account for substantial delay duration.
 
-1. **Airline Scatter Plot** (Scatter plot). Reference: https://github.com/momo840505/flight-reliability-platform. Compares airline scale and reliability.
+![v4](pic/v4)
 
-2. **Airport Map** (Interactive proportional-symbol map). Reference: https://0506zhengyi.github.io/Airline_on_time_performance/interactive-component.html. Explores geographic delay variation.
+### 5 Weather and Delay Profiles
 
-3. **Seasonal Line Chart** (Line chart). Reference: https://public.tableau.com/app/profile/mazen.karam/viz/seasonlflightdelays/SeasonalPatternsofDelays. Identifies seasonal peaks.
+Two linked parallel-coordinates plots will compare airport profiles. The first combines flight volume, delay rate, average delay duration, weather share, and late-aircraft share; the second compares normalized cause counts. Brushing and highlighting will identify airports with similar profiles. These views explore weather associations without treating the reported weather category as a complete measure of weather impacts.
 
-4. **Cause Dashboard** (Linked-view dashboard). Reference: https://github.com/cemputer/bts-airline-data-platform. Sketch: `viz4_delay_cause_dashboard.png`. Reveals delay-cause "DNA" across top 10 airports with interactive sorting and drill-down.
+![v5](pic/v5)
 
-5. **Weather Parallel Coords** (Dual parallel coordinates). Reference: https://www.faa.gov/nextgen/programs/weather/faq. Sketch: `viz5_weather_parallel_coords.png`. Cross-references overall delay severity with weather-specific vulnerability.
 
-6. **Propagation Network** (Force-directed graph). Reference: (To be added by Nora). Reveals delay cascade patterns and critical hubs.
+### 6 Delay Propagation Flow Map
 
----
+A directional flow map centered on Chicago O’Hare will trace connected aircraft journeys. Line width represents journey counts, while color indicates growing, recovering, or stable delays. Connections will require matching tail numbers, airports, and plausible turnaround times. Route selection reveals subsequent flights. If suitable identifiers are unavailable, we will narrow this component rather than infer confirmed aircraft sequences from flight numbers alone.
 
-## 5. Group Roles and Responsibilities
+![v6](pic/v6)
 
-- **Yuxuan:** Data acquisition/cleaning; interface development; D3.js for scatter plot, map, and line chart; testing; documentation.
-- **Nora:** Dataset sourcing; force-directed network design and D3.js implementation; topic definition.
-- **Rosa:** Delay-cause and weather analysis; D3.js for dashboard and parallel coordinates; timeline planning; presentation preparation.
+## Team Responsibilities
 
-All members participate in weekly syncs, code reviews, and final integration.
+Yuxuan will lead the airline scatter plot, airport map, and seasonal analysis. Rosa will lead delay-cause analysis and weather profiles. Nora will lead flight-sequence preparation and propagation visualization. All members will contribute to data validation, interface integration, testing, documentation, and presentation preparation, and review the complete analytical workflow.
 
----
+## Interim Deliverables and Timeline
 
-## 6. Interim Presentation Deliverables
+The interim presentation will include cleaned CSV subsets, a data dictionary, preliminary summaries, finalized research questions, and mockups or prototypes for at least four views. At least two views will demonstrate working interactions, including tooltips and filters.
 
-- Cleaned BTS subset (2018–2025) with derived fields in the repo.
-- Summary statistics and preliminary static charts.
-- Finalized research questions with design justifications.
-- Mockups or low-fidelity D3.js prototypes for at least four visualizations.
-- Working D3.js code for at least two interactive visualizations with tooltips.
-
----
-
-## 7. Timeline and Milestones
-
-| Week | Milestone | Tasks | Responsible | Output |
-|------|-----------|-------|-------------|--------|
-| **2** | Project Definition | Finalize questions; scope dataset; assign roles; set up repo | All | `proposal.md`; project board |
-| **3** | Data Preparation | Download/clean BTS data; compute derived fields; merge coordinates | Yuxuan, Rosa, Nora | Cleaned CSVs; data dictionary |
-| **4** | Visualization Design | Sketch all six visualizations; define colors/interactions; build HTML skeleton | Nora, Rosa, Yuxuan | Mockups; style guide; skeleton |
-| **5** | Interim Prototype | D3.js prototypes for 4+ visualizations; tooltips/filters; presentation slides | Yuxuan, Rosa, Nora | Live prototype; interim slides |
-| **6** | Implementation | Complete all six D3.js visualizations; brushing/linking; dashboard integration; testing | All | Interactive dashboard; test reports |
-| **7** | Final Integration | Debug; document; record demo; final presentation; deploy to GitHub Pages | All | Final repo; deployed site; presentation |
+- **Week 2:** Finalize scope, responsibilities, research questions, and the GitHub repository.
+- **Week 3:** Acquire and clean data, calculate metrics, and match airport coordinates.
+- **Week 4:** Complete six sketches, interaction plans, and the HTML/CSS interface.
+- **Week 5:** Deliver interim prototypes and presentation materials.
+- **Week 6:** Complete and connect all six views; test calculations, filters, and browser behavior.
+- **Week 7:** Resolve remaining issues, finish documentation, deploy to GitHub Pages, and present findings and limitations.
