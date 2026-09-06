@@ -32,7 +32,7 @@ Propagation analysis requires separate flight-level data with tail numbers, airp
 
 Each airline is a point: horizontal position shows arrival volume and vertical position shows on-time rate. Tooltips expose totals. Users compare airline reliability and explore its relationship with operational scale.
 
-![v1](pics/v1)
+![v1](pic/v1)
 
 Reference: [Flight Reliability Analytics Platform — Airline Scale vs Reliability](https://github.com/momo840505/flight-reliability-platform).
 
@@ -40,7 +40,7 @@ Reference: [Flight Reliability Analytics Platform — Airline Scale vs Reliabili
 
 Airport marker size represents flight volume; color represents delay rate. Hovering reveals details, and selection filters related views. Users explore geographic variation and identify unusually high or low rates.
 
-![v2](pics/v2)
+![v2](pic/v2)
 
 Reference: [USA Airlines On-Time Performance](https://0506zhengyi.github.io/Airline_on_time_performance/interactive-component.html).
 
@@ -48,7 +48,7 @@ Reference: [USA Airlines On-Time Performance](https://0506zhengyi.github.io/Airl
 
 A chronological line shows monthly delay rates by year, with airline and airport filters. Users identify peaks, declines, and repeated seasonal patterns rather than relying on four-season averages.
 
-![v3](pics/v3)
+![v3](pic/v3)
 
 Reference: [Seasonal Patterns of Delays](https://public.tableau.com/app/profile/mazen.karam/viz/seasonlflightdelays/SeasonalPatternsofDelays?publish=yes).
 
@@ -56,7 +56,7 @@ Reference: [Seasonal Patterns of Delays](https://public.tableau.com/app/profile/
 
 A 100% stacked horizontal bar chart compares carrier, weather, NAS, security, and late-aircraft causes across the ten busiest airports. Users switch between counts and minutes, re-sort airports, and select bars to update details and monthly trends.
 
-![v4](pics/v4)
+![v4](pic/v4)
 
 Design reference: [BTS Airline Data Platform](https://github.com/cemputer/bts-airline-data-platform).
 
@@ -64,9 +64,7 @@ Design reference: [BTS Airline Data Platform](https://github.com/cemputer/bts-ai
 
 Two linked parallel-coordinates plots show airport severity profiles and normalized cause counts. Axes include flight volume, delay rate, average delay, weather share, and late-aircraft share. Brushing highlights similar airports and explores weather associations without treating reported weather delays as all weather impacts.
 
-![v5](pics/v5)
-
-![v6](pics/v6)
+![v5](pic/v5)
 
 Subject reference: [FAA Weather Delay FAQ](https://www.faa.gov/nextgen/programs/weather/faq); the paired plots illustrate our proposed comparison design.
 
@@ -74,7 +72,7 @@ Subject reference: [FAA Weather Delay FAQ](https://www.faa.gov/nextgen/programs/
 
 A directional map centered on Chicago O’Hare traces connected aircraft journeys. Width shows journey counts; color shows growing, recovering, or stable delays. Date and airline filters support route comparisons; selecting routes reveals subsequent flights and unusually large delay changes.
 
-![v7](pics/v7)
+![v6](pic/v6)
 
 Image reference: AI-generated conceptual sketch of the proposed flow map.
 
