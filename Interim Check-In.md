@@ -31,19 +31,19 @@
 
 **Purpose:** To reveal the geographic distribution of flight delays across the United States and identify regional patterns. Bubble size encodes total flight volume (larger = busier airport), while color encodes delay rate (red = higher delay, blue = lower delay). This allows users to simultaneously compare "how busy" and "how delayed" each airport is.
 
-![Airport Delay Map](viz1_airport_map_real.png)
+![Airport Delay Map](vis/viz1_airport_map_real.png)
 
 ### Visualization 2: Delay Cause Breakdown — Top 10 Busiest Airports
 
 **Purpose:** To decompose overall delays into their five reported causes (Carrier, Weather, NAS, Security, Late Aircraft) for the busiest airports. Using 100% stacked horizontal bars, users can compare the "delay DNA" of each airport—e.g., whether one airport suffers disproportionately from weather while another is dominated by late aircraft.
 
-![Delay Cause Stacked Bars](viz2_cause_stacked_real.png)
+![Delay Cause Stacked Bars](vis/viz2_cause_stacked_real.png)
 
 ### Visualization 3: Weather vs. Delay Rate Scatter Plot
 
 **Purpose:** To investigate the relationship between meteorological conditions and flight delays. The left panel plots average monthly precipitation against overall delay rate; the right panel plots average temperature against weather-delay share. Bubble size represents flight volume, and color encodes weather-delay percentage, enabling multi-dimensional outlier detection.
 
-![Weather Delay Correlation](viz3_weather_corr_real.png)
+![Weather Delay Correlation](vis/viz3_weather_corr_real.png)
 
 ---
 
