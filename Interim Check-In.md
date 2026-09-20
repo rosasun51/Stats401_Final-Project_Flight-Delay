@@ -68,9 +68,6 @@
 
 ![Airline Performance Scatter Plot: reported flight volume versus on-time rate for 25 carriers, January 2020–June 2026](vis/viz4_airlines.png)
 
-[Open the working interactive Visualization 4](vis/viz4_airline_performance.html) · [Download the carrier-level data](data/airline_performance.csv)
-
-
 ---
 
 ## 3. Interaction / Animation Plan
