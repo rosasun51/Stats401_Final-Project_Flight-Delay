@@ -176,27 +176,18 @@
   <h1>Weather and Flight Disruption Profiles</h1>
 
   <p class="description">
-    Each line represents one airport–month.
+    Each line represents one record in your uploaded flight + weather dataset (airport–month, or carrier–airport–month).
     Brush weather or flight axes to highlight the same monthly records
     in both views.
   </p>
 
   <div class="uploads">
     <label>
-      Airport–month CSV
-      <input id="airportFile" type="file" accept=".csv">
-    </label>
-
-    <label>
-      Optional carrier–airport–month CSV
-      <input id="carrierFile" type="file" accept=".csv">
+      Upload Flight + Weather CSV
+      <input id="flightFile" type="file" accept=".csv,text/csv">
     </label>
   </div>
-
-  <p class="note">
-    Uploaded CSV files are processed locally in your browser.
-    The carrier CSV does not need to be hosted on GitHub.
-  </p>
+  <p class="note">Choose the merged CSV on your computer. It is processed in your browser only; you do not need to upload the large file to GitHub. Weather fields are matched to airport and month in your data.</p>
 
   <div id="error" role="alert"></div>
 
@@ -255,7 +246,7 @@
     <button id="export">Export selection</button>
   </div>
 
-  <div id="status" aria-live="polite">Loading airport CSV…</div>
+  <div id="status" aria-live="polite">Upload your Flight + Weather CSV to begin.</div>
 
   <div class="legend">
     <span>
@@ -353,7 +344,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const DEFAULT_AIRPORT_CSV = "../../data/airport_weather_monthly.csv";
+
 
 const WEATHER_BASE = [
   ["noaa_PRCP", "Precipitation", "mm"],
@@ -384,7 +375,7 @@ const NUMERIC_FIELDS = [
 ];
 
 let airportData = [];
-let carrierData = [];
+
 let filtered = [];
 let selected = [];
 let plots = [];
@@ -397,7 +388,8 @@ function formatValue(value, rate = false) {
     : d3.format(",.1f")(value);
 }
 
-function parseCSV(text, isCarrier = false) {
+function parseCSV(text) {
+  if (!text.trim()) throw new Error("The CSV file is empty.");
   const rows = d3.csvParse(text);
 
   const required = [
@@ -405,7 +397,7 @@ function parseCSV(text, isCarrier = false) {
     "arr_del15", "arr_cancelled", "arr_delay", "weather_ct"
   ];
 
-  if (isCarrier) required.push("carrier");
+
 
   const missing = required.filter(k => !rows.columns.includes(k));
 
@@ -426,11 +418,10 @@ function parseCSV(text, isCarrier = false) {
     });
 
     d.airport = String(d.airport ?? "").trim();
-    if (isCarrier) d.carrier = String(d.carrier ?? "").trim();
+    d.carrier = String(d.carrier ?? "").trim();
 
     if (
       !d.airport ||
-      (isCarrier && !d.carrier) ||
       !Number.isInteger(d.year) ||
       !Number.isInteger(d.month) ||
       d.month < 1 ||
@@ -457,7 +448,7 @@ function parseCSV(text, isCarrier = false) {
     d.key = [
       d.airport,
       d.date,
-      isCarrier ? d.carrier : "all"
+      d.carrier || "all"
     ].join("|");
 
     if (keys.has(d.key)) {
@@ -490,7 +481,7 @@ function populateControls() {
   const previousAirport = $("airport").value;
   const previousCarrier = $("carrier").value;
 
-  const combined = [...airportData, ...carrierData];
+  const combined = airportData;
   const airportCodes = [...new Set(combined.map(d => d.airport))].sort();
 
   $("airport").replaceChildren(
@@ -504,16 +495,14 @@ function populateControls() {
       ? "ABE"
       : airportCodes[0] || "all";
 
-  const carriers = [...new Set(carrierData.map(d => d.carrier))].sort();
+  const carriers = [...new Set(airportData.map(d => d.carrier).filter(Boolean))].sort();
 
   const carrierOptions = [];
 
-  if (airportData.length) {
-    carrierOptions.push(new Option("All airlines", "all"));
-  }
+  carrierOptions.push(new Option("All airlines", "all"));
 
   for (const code of carriers) {
-    const row = carrierData.find(d => d.carrier === code);
+    const row = airportData.find(d => d.carrier === code);
     const name = row.carrier_name || code;
     carrierOptions.push(new Option(`${code} · ${name}`, code));
   }
@@ -566,7 +555,7 @@ function refresh() {
 
   const source = carrier === "all"
     ? airportData
-    : carrierData.filter(d => d.carrier === carrier);
+    : airportData.filter(d => d.carrier === carrier);
 
   filtered = source.filter(d =>
     ($("airport").value === "all" || d.airport === $("airport").value) &&
@@ -888,7 +877,7 @@ function updateSelection() {
   plots.forEach(drawPlot);
 
   $("status").textContent =
-    `${filtered.length.toLocaleString()} airport–months in current filters · ` +
+    `${filtered.length.toLocaleString()} records in current filters · ` +
     `${selected.length.toLocaleString()} selected · ` +
     `${new Set(filtered.map(d => d.airport)).size} airports`;
 
@@ -914,7 +903,7 @@ function updateSelection() {
   const b = aggregate(other);
 
   const labels = [
-    "Airport–months",
+    "Records",
     "Reported flights",
     "Delay rate",
     "Cancellation rate",
@@ -1038,29 +1027,20 @@ $("export").addEventListener("click", () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 
-[
-  ["airportFile", false],
-  ["carrierFile", true]
-].forEach(([id, isCarrier]) => {
-  $(id).addEventListener("change", async event => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    $("status").textContent = `Reading ${file.name}…`;
-    $("error").textContent = "";
-
-    try {
-      const rows = parseCSV(await file.text(), isCarrier);
-
-      if (isCarrier) carrierData = rows;
-      else airportData = rows;
-
-      populateControls();
-    } catch (error) {
-      $("error").textContent = error.message;
-      updateSelection();
-    }
-  });
+$("flightFile").addEventListener("change", async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  $("status").textContent = `Reading ${file.name}…`;
+  $("error").textContent = "";
+  try {
+    const rows = parseCSV(await file.text());
+    airportData = rows;
+    populateControls();
+    $("status").textContent += ` · Loaded ${file.name}`;
+  } catch (error) {
+    $("error").textContent = error.message;
+    $("status").textContent = "Could not load CSV. Please check the file format.";
+  }
 });
 
 let resizeTimer;
@@ -1088,30 +1068,9 @@ window.addEventListener("resize", () => {
   }, 200);
 });
 
-(async function initialize() {
-  try {
-    const response = await fetch(DEFAULT_AIRPORT_CSV);
-
-    if (!response.ok) {
-      throw new Error("Default airport CSV is unavailable.");
-    }
-
-    const text = await response.text();
-
-    if (!text.trim()) {
-      throw new Error("Default airport CSV is empty.");
-    }
-
-    airportData = parseCSV(text);
-    populateControls();
-
-  } catch (error) {
-    populateControls();
-
-    $("error").textContent =
-      `${error.message} Upload your airport–month CSV above.`;
-  }
-})();
+// The page starts without data. The user uploads one merged CSV.
+populateControls();
+$("status").textContent = "Upload your Flight + Weather CSV to begin.";
 </script>
 </body>
 </html>
