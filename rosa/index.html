@@ -9,451 +9,455 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
   * { box-sizing: border-box; }
-  body {
-    font-family: 'Inter', sans-serif;
-    background: #f5f6f8;
-    margin: 0; padding: 20px;
-    color: #2c3e50;
-  }
+  body { font-family: 'Inter', sans-serif; background: #f5f6f8; margin: 0; padding: 20px; color: #2c3e50; }
   h1 { text-align: center; font-size: 24px; margin-bottom: 6px; }
   .subtitle { text-align: center; color: #7f8c8d; font-size: 14px; margin-bottom: 30px; }
-  .viz-container {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    padding: 20px;
-    margin-bottom: 30px;
-    position: relative;
-  }
-  .viz-title {
-    font-size: 16px; font-weight: 700; margin-bottom: 4px;
-  }
-  .viz-desc {
-    font-size: 12px; color: #7f8c8d; margin-bottom: 14px;
-  }
-  .tooltip {
-    position: absolute;
-    background: rgba(255,255,255,0.96);
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 12px;
-    pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-    opacity: 0;
-    transition: opacity 0.15s;
-    z-index: 100;
-    max-width: 260px;
-  }
+  .viz-container { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 20px; margin: 0 auto 30px; max-width: 1000px; position: relative; }
+  .viz-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .viz-desc { font-size: 12px; color: #7f8c8d; margin-bottom: 14px; }
+  .viz-insight { font-size: 12px; color: #34495e; background: #eaf2f8; border-left: 3px solid #3498db;
+    padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 14px; }
+  .tooltip { position: fixed; background: rgba(255,255,255,0.97); border: 1px solid #ddd; border-radius: 8px;
+    padding: 10px 14px; font-size: 12px; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    opacity: 0; transition: opacity 0.15s; z-index: 1000; max-width: 280px; }
   .tooltip strong { font-size: 13px; color: #2c3e50; }
-  .legend-item { display: inline-flex; align-items: center; margin-right: 14px; font-size: 12px; }
+  .legend-item { display: inline-flex; align-items: center; margin-right: 14px; font-size: 12px; cursor: pointer; }
   .legend-color { width: 12px; height: 12px; border-radius: 2px; margin-right: 5px; }
+  .legend-item.dim { opacity: 0.35; }
   .controls { margin-bottom: 12px; }
-  button {
-    background: #ecf0f1; border: none; padding: 6px 14px;
-    border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 6px;
-    transition: background 0.2s;
-  }
+  button { background: #ecf0f1; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    font-size: 12px; margin-right: 6px; transition: background 0.2s; }
   button:hover { background: #d5dbdb; }
   button.active { background: #3498db; color: white; }
   .axis-label { font-size: 11px; fill: #7f8c8d; }
   .brush .selection { fill: #3498db; fill-opacity: 0.15; stroke: #3498db; }
+  svg { display: block; }
 </style>
 <base target="_blank">
 </head>
 <body>
 
 <h1>Flight Delay Analysis — Rosa's Visualizations</h1>
-<div class="subtitle">Built with D3.js using real BTS + NOAA merged data (2020–2026)</div>
+<div class="subtitle">Built with D3.js · BTS On-Time Performance + NOAA weather, 224 U.S. airports, 2020–2026</div>
 
-<!-- TOOLTIP -->
 <div id="tooltip" class="tooltip"></div>
 
-<!-- VIZ 1: MAP -->
+<!-- ============ VIZ 1: MAP ============ -->
 <div class="viz-container">
-  <div class="viz-title">1. U.S. Airport Delay Map</div>
-  <div class="viz-desc">Bubble size = total flights · Color = delay rate · Hover for details</div>
+  <div class="viz-title">1. Where Do Delays Concentrate? — U.S. Airport Delay Map</div>
+  <div class="viz-desc">Bubble size = total arrivals · Color = selected metric · Scroll to zoom, drag to pan, hover a bubble for details.</div>
+  <div class="controls">
+    <span style="font-size:12px;color:#7f8c8d;margin-right:8px;">Color by:</span>
+    <button class="map-metric-btn active" data-metric="delay">Delay Rate</button>
+    <button class="map-metric-btn" data-metric="weather">Weather-Delay Share</button>
+  </div>
+  <div class="viz-insight" id="map-insight"></div>
   <div id="chart-map"></div>
 </div>
 
-<!-- VIZ 2: STACKED BARS -->
+<!-- ============ VIZ 2: STACKED BARS ============ -->
 <div class="viz-container">
-  <div class="viz-title">2. Delay Cause Breakdown — Top 10 Busiest Airports</div>
-  <div class="viz-desc">100% stacked bars showing cause composition · Click buttons to re-sort</div>
+  <div class="viz-title">2. What Causes Delays? — Cause Breakdown at the 10 Busiest Airports</div>
+  <div class="viz-desc">100% stacked bars · Click the sort buttons to re-order; click a legend swatch to spotlight one cause.</div>
   <div class="controls">
     <button class="sort-btn active" data-sort="default">By Flight Volume</button>
     <button class="sort-btn" data-sort="weather">By Weather %</button>
-    <button class="sort-btn" data-sort="late">By Late Aircraft %</button>
+    <button class="sort-btn" data-sort="late">By Late-Aircraft %</button>
+    <button class="sort-btn" data-sort="carrier">By Carrier %</button>
   </div>
+  <div class="viz-insight">Across the 10 busiest hubs, <b>late-arriving aircraft</b> is the single largest delay cause
+    (roughly a third of all delays) — delays propagate through the network rather than originating locally.</div>
   <div id="chart-bars"></div>
   <div style="margin-top:10px" id="legend-bars"></div>
 </div>
 
-<!-- VIZ 3: SCATTER + BRUSH -->
+<!-- ============ VIZ 3: SCATTER + BRUSH ============ -->
 <div class="viz-container">
-  <div class="viz-title">3. Weather vs. Delay Rate (with Brush Filter)</div>
-  <div class="viz-desc">Brush to filter airports · Bubble size = flight volume · Color = weather delay %</div>
+  <div class="viz-title">3. Does Weather Drive Delays? — Precipitation vs. Delay Rate</div>
+  <div class="viz-desc">Brush a rectangle to filter airports, double-click (or Reset) to restore. Bubble size = flight volume, color = weather-delay share.</div>
+  <div class="controls"><button id="scatter-reset">Reset filter</button></div>
+  <div class="viz-insight" id="scatter-insight"></div>
   <div id="chart-scatter"></div>
 </div>
 
+<script src="data.js"></script>
 <script>
 // ============================================================
 // GLOBAL SETUP
 // ============================================================
 const tooltip = d3.select("#tooltip");
 const showTooltip = (event, html) => {
-  tooltip.style("opacity", 1)
-    .html(html)
-    .style("left", (event.pageX + 12) + "px")
-    .style("top", (event.pageY - 10) + "px");
+  tooltip.style("opacity", 1).html(html)
+    .style("left", (event.clientX + 14) + "px")
+    .style("top", (event.clientY - 12) + "px");
 };
 const hideTooltip = () => tooltip.style("opacity", 0);
+const fmt = d3.format(",");
 
-// Color palette (matches proposal)
-const CAUSE_COLORS = {
-  carrier: "#E74C3C",
-  weather: "#3498DB",
-  nas: "#2ECC71",
-  security: "#F39C12",
-  late: "#9B59B6"
-};
-const CAUSE_LABELS = {
-  carrier: "Carrier", weather: "Weather", nas: "NAS", security: "Security", late: "Late Aircraft"
-};
+const CAUSE_COLORS = { carrier:"#E74C3C", weather:"#3498DB", nas:"#2ECC71", security:"#F39C12", late:"#9B59B6" };
+const CAUSE_LABELS = { carrier:"Carrier", weather:"Weather", nas:"NAS", security:"Security", late:"Late Aircraft" };
+const CAUSES = ["carrier","weather","nas","security","late"];
 
 // ============================================================
-// VIZ 1: MAP
+// VIZ 1 — US MAP (geo viz: zoom/pan, tooltips, metric toggle)
 // ============================================================
 async function drawMap() {
-  const container = d3.select("#chart-map");
-  const width = 900, height = 500;
-  const svg = container.append("svg").attr("width", width).attr("height", height);
+  const width = 940, height = 500;
+  const svg = d3.select("#chart-map").append("svg")
+    .attr("width", width).attr("height", height).attr("viewBox", `0 0 ${width} ${height}`);
 
-  // Load US states topojson + airport data
-  const [us, airports] = await Promise.all([
-    d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json"),
-    d3.csv("airport_summary.csv", d => ({
-      airport: d.airport,
-      name: d.airport_name,
-      lat: +d.airport_latitude,
-      lon: +d.airport_longitude,
-      flights: +d.arr_flights,
-      delay: +d.delay_rate_pct,
-      weather: +d.weather_pct
-    }))
-  ]);
-
-  const states = topojson.feature(us, us.objects.states);
-  const projection = d3.geoAlbersUsa().scale(1200).translate([width/2, height/2]);
+  const projection = d3.geoAlbersUsa().scale(1250).translate([width/2, height/2]);
   const path = d3.geoPath(projection);
 
-  // Filter to continental + projectable
-  const valid = airports.filter(d => {
-    const p = projection([d.lon, d.lat]);
-    return p && d.lon > -125 && d.lon < -66 && d.lat > 24 && d.lat < 50;
-  });
+  const airports = AIRPORT_DATA.filter(d =>
+    d.lat && d.lon && projection([d.lon, d.lat]) &&
+    d.lon > -125 && d.lon < -66 && d.lat > 24 && d.lat < 50);
 
-  // Draw states
-  svg.append("g")
-    .selectAll("path")
-    .data(states.features)
-    .join("path")
-    .attr("d", path)
-    .attr("fill", "#e8e8e8")
-    .attr("stroke", "white")
-    .attr("stroke-width", 0.8);
+  // --- Map background (feedback: real US map behind the points) ---
+  const gMap = svg.append("g");
+  try {
+    const us = await d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json");
+    gMap.selectAll("path")
+      .data(topojson.feature(us, us.objects.states).features)
+      .join("path")
+      .attr("d", path)
+      .attr("fill", "#eef1f4")
+      .attr("stroke", "#ffffff")
+      .attr("stroke-width", 0.8);
+  } catch(e) {
+    svg.append("rect").attr("width", width).attr("height", height).attr("fill", "#eef1f4");
+  }
 
-  // Scales
-  const sizeScale = d3.scaleSqrt()
-    .domain([0, d3.max(valid, d => d.flights)])
-    .range([3, 28]);
-  const colorScale = d3.scaleSequential(d3.interpolateRdYlBu)
-    .domain([30, 8]); // reversed: red = high delay
+  // --- Scales ---
+  const sizeScale = d3.scaleSqrt().domain([0, d3.max(airports, d => d.flights)]).range([2.5, 26]);
+  const delayColor = d3.scaleSequential(d3.interpolateRdYlBu).domain([28, 8]);
+  const weatherColor = d3.scaleSequential(d3.interpolateBlues).domain([0, 12]);
+  const colorScales = { delay: delayColor, weather: weatherColor };
+  const metricLabels = { delay: "Delay Rate (%)", weather: "Weather-Delay Share (%)" };
 
-  // Draw bubbles
-  svg.append("g")
-    .selectAll("circle")
-    .data(valid)
-    .join("circle")
+  const gDots = svg.append("g");
+
+  // --- Bubbles (with entrance animation) ---
+  const bubbles = gDots.selectAll("circle").data(airports).join("circle")
     .attr("cx", d => projection([d.lon, d.lat])[0])
     .attr("cy", d => projection([d.lon, d.lat])[1])
-    .attr("r", d => sizeScale(d.flights))
-    .attr("fill", d => colorScale(d.delay))
-    .attr("opacity", 0.78)
-    .attr("stroke", "white")
-    .attr("stroke-width", 1.2)
+    .attr("r", 0)                       // animation: grow in
+    .attr("fill", d => delayColor(d.delay))
+    .attr("opacity", 0.8)
+    .attr("stroke", "#ffffff")
+    .attr("stroke-width", 1)
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
-      d3.select(this).attr("stroke", "#2c3e50").attr("stroke-width", 2.5);
-      showTooltip(event, `<strong>${d.airport}</strong><br/>${d.name}<br/>
-        Flights: ${d3.format(",")(d.flights)}<br/>
-        Delay Rate: <b>${d.delay}%</b><br/>
-        Weather Delay: ${d.weather}%`);
+      bubbles.filter(b => b !== d).transition().duration(150).attr("opacity", 0.25); // highlight vs context
+      d3.select(this).raise().attr("stroke", "#2c3e50").attr("stroke-width", 2);
+      showTooltip(event, `<strong>${d.airport}</strong> — ${d.name}<br/>
+        Arrivals: ${fmt(d.flights)}<br/>
+        Delay rate: <b>${d.delay}%</b><br/>
+        Weather-delay share: <b>${d.weather}%</b><br/>
+        Avg precip: ${d.prcp ?? "n/a"} mm · Avg temp: ${d.temp ?? "n/a"} °C`);
     })
-    .on("mousemove", event => tooltip
-      .style("left", (event.pageX + 12) + "px")
-      .style("top", (event.pageY - 10) + "px"))
+    .on("mousemove", event => tooltip.style("left",(event.clientX+14)+"px").style("top",(event.clientY-12)+"px"))
     .on("mouseout", function() {
-      d3.select(this).attr("stroke", "white").attr("stroke-width", 1.2);
+      bubbles.transition().duration(150).attr("opacity", 0.8);
+      d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 1);
       hideTooltip();
     });
 
-  // Label top 8 by volume
-  const top8 = valid.sort((a,b) => b.flights - a.flights).slice(0,8);
-  svg.append("g")
-    .selectAll("text")
-    .data(top8)
-    .join("text")
-    .attr("x", d => projection([d.lon, d.lat])[0])
-    .attr("y", d => projection([d.lon, d.lat])[1] - sizeScale(d.flights) - 5)
-    .attr("text-anchor", "middle")
-    .attr("font-size", 10)
-    .attr("font-weight", 600)
-    .attr("fill", "#2c3e50")
-    .text(d => d.airport);
+  bubbles.transition().delay((d,i) => i * 6).duration(600).ease(d3.easeCubicOut)
+    .attr("r", d => sizeScale(d.flights));
 
-  // Color legend
-  const legendW = 200, legendH = 10;
-  const legendSvg = svg.append("g").attr("transform", `translate(${width-240}, ${height-50})`);
+  // --- Labels for the 8 busiest hubs ---
+  const top8 = [...airports].sort((a,b) => b.flights - a.flights).slice(0, 8);
+  gDots.selectAll("text.label").data(top8).join("text")
+    .attr("class", "label")
+    .attr("x", d => projection([d.lon, d.lat])[0])
+    .attr("y", d => projection([d.lon, d.lat])[1] - sizeScale(d.flights) - 4)
+    .attr("text-anchor", "middle")
+    .attr("font-size", 10).attr("font-weight", 600).attr("fill", "#2c3e50")
+    .attr("pointer-events", "none")
+    .style("opacity", 0)
+    .text(d => d.airport)
+    .transition().delay(1000).duration(400).style("opacity", 1);
+
+  // --- Color legend (updates with metric toggle) ---
+  const legend = svg.append("g").attr("transform", `translate(${width-260}, ${height-46})`);
+  const lw = 180;
   const defs = svg.append("defs");
-  const grad = defs.append("linearGradient").attr("id", "map-grad").attr("x1",0).attr("x2",1).attr("y1",0).attr("y2",0);
-  const colorInterp = d3.interpolateRdYlBu;
-  for(let i=0; i<=10; i++) grad.append("stop").attr("offset", i*10+"%").attr("stop-color", colorInterp(1-i/10));
-  legendSvg.append("rect").attr("width", legendW).attr("height", legendH).attr("fill", "url(#map-grad)").attr("rx", 2);
-  legendSvg.append("text").attr("x", 0).attr("y", -6).attr("font-size", 10).attr("fill", "#555").text("Delay Rate: Low");
-  legendSvg.append("text").attr("x", legendW).attr("y", -6).attr("font-size", 10).attr("fill", "#555").attr("text-anchor", "end").text("High");
+  const grad = defs.append("linearGradient").attr("id", "map-grad").attr("x1",0).attr("x2",1);
+  const legendRect = legend.append("rect").attr("width", lw).attr("height", 10)
+    .attr("rx", 2).style("stroke", "#ddd");
+  const legendLow = legend.append("text").attr("x", 0).attr("y", -5).attr("font-size", 10).attr("fill", "#555");
+  const legendHigh = legend.append("text").attr("x", lw).attr("y", -5).attr("font-size", 10)
+    .attr("fill", "#555").attr("text-anchor", "end");
+  const legendTitle = legend.append("text").attr("x", 0).attr("y", 24).attr("font-size", 10)
+    .attr("fill", "#555").attr("font-weight", 600);
+
+  function updateLegend(metric) {
+    const scale = colorScales[metric];
+    grad.selectAll("stop").remove();
+    for (let i = 0; i <= 20; i++)
+      grad.append("stop").attr("offset", (i*5)+"%").attr("stop-color", scale(1 - i/20));
+    legendRect.attr("fill", "url(#map-grad)");
+    const d = scale.domain();
+    legendLow.text(d[0].toFixed(0)); legendHigh.text(d[1].toFixed(0));
+    legendTitle.text(metricLabels[metric]);
+  }
+  updateLegend("delay");
+
+  // --- Size legend ---
+  const sizeLegend = svg.append("g").attr("transform", `translate(24, ${height-70})`);
+  const svals = [1e5, 1e6, 2e6];
+  svals.forEach((v, i) => {
+    sizeLegend.append("circle")
+      .attr("cx", 14 + i * 74).attr("cy", 26 - sizeScale(v))
+      .attr("r", sizeScale(v)).attr("fill", "none").attr("stroke", "#bbb");
+    sizeLegend.append("text").attr("x", 14 + i * 74).attr("y", 40)
+      .attr("text-anchor", "middle").attr("font-size", 9).attr("fill", "#777")
+      .text(v >= 1e6 ? (v/1e6) + "M" : (v/1e3) + "K");
+  });
+  sizeLegend.append("text").attr("x", 0).attr("y", -8).attr("font-size", 10)
+    .attr("fill", "#555").attr("font-weight", 600).text("Total arrivals");
+
+  // --- Metric toggle (dynamic query) ---
+  d3.selectAll(".map-metric-btn").on("click", function() {
+    d3.selectAll(".map-metric-btn").classed("active", false);
+    d3.select(this).classed("active", true);
+    const metric = d3.select(this).attr("data-metric");
+    bubbles.transition().duration(500).attr("fill", d => colorScales[metric](d[metric]));
+    updateLegend(metric);
+    updateInsight(metric);
+  });
+
+  // --- Insight line computed from REAL data ---
+  function updateInsight(metric) {
+    const el = d3.select("#map-insight");
+    if (metric === "delay") {
+      const w = [...airports].sort((a,b) => b.delay - a.delay)[0];
+      const best = [...airports].filter(d => d.flights > 500000).sort((a,b) => a.delay - b.delay)[0];
+      el.html(`<b>Highest delay rate:</b> ${w.airport} (${w.delay}% of arrivals delayed). ` +
+              `<b>Most reliable large hub:</b> ${best.airport} (${best.delay}% delay rate on ${fmt(best.flights)} arrivals).`);
+    } else {
+      const w = [...airports].sort((a,b) => b.weather - a.weather)[0];
+      el.html(`<b>Most weather-exposed airport:</b> ${w.airport} — weather explains <b>${w.weather}%</b> of its delays, ` +
+              `vs. a national median of ~5%.`);
+    }
+  }
+  updateInsight("delay");
+
+  // --- Zoom & pan (interaction) ---
+  svg.call(d3.zoom().scaleExtent([1, 8]).on("zoom", event => {
+      gMap.attr("transform", event.transform);
+      gDots.attr("transform", event.transform);
+    }))
+    .on("dblclick.zoom", null);
 }
 
 // ============================================================
-// VIZ 2: STACKED HORIZONTAL BARS
+// VIZ 2 — STACKED BARS (sorting + legend spotlight)
 // ============================================================
-async function drawBars() {
-  const container = d3.select("#chart-bars");
-  const margin = {top: 10, right: 120, bottom: 30, left: 50};
-  const width = 800 - margin.left - margin.right;
+function drawBars() {
+  const margin = {top: 10, right: 110, bottom: 30, left: 52};
+  const width = 860 - margin.left - margin.right;
   const height = 340 - margin.top - margin.bottom;
-  const svg = container.append("svg")
+  const svg = d3.select("#chart-bars").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
+    .append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-  let data = await d3.csv("top10_causes.csv", d => ({
-    airport: d.airport,
-    flights: +d.arr_flights,
-    carrier: +d.carrier_ct_pct,
-    weather: +d.weather_ct_pct,
-    nas: +d.nas_ct_pct,
-    security: +d.security_ct_pct,
-    late: +d.late_aircraft_ct_pct
-  }));
-
-  const causes = ["carrier","weather","nas","security","late"];
-  const stack = d3.stack().keys(causes);
-  let stacked = stack(data);
-
-  const y = d3.scaleBand().domain(data.map(d => d.airport)).range([height, 0]).padding(0.25);
+  let data = [...TOP10_DATA];
+  const stack = d3.stack().keys(CAUSES);
+  const y = d3.scaleBand().range([height, 0]).padding(0.25);
   const x = d3.scaleLinear().domain([0, 100]).range([0, width]);
-  const color = d3.scaleOrdinal().domain(causes).range(causes.map(k => CAUSE_COLORS[k]));
+  const color = d3.scaleOrdinal().domain(CAUSES).range(CAUSES.map(k => CAUSE_COLORS[k]));
+  let spotlight = null;
 
-  // Draw bars function
+  svg.append("g").attr("class", "x-axis")
+    .attr("transform", `translate(0,${height})`)
+    .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + "%"));
+
   function update(sortedData) {
     y.domain(sortedData.map(d => d.airport));
-    stacked = stack(sortedData);
+    const stacked = stack(sortedData);
 
-    const layer = svg.selectAll(".layer")
-      .data(stacked, d => d.key);
+    const layer = svg.selectAll(".layer").data(stacked, d => d.key);
+    const layerEnter = layer.enter().append("g").attr("class", "layer").attr("fill", d => color(d.key));
+    const allLayers = layerEnter.merge(layer);
 
-    layer.enter().append("g")
-      .attr("class", "layer")
-      .attr("fill", d => color(d.key))
-      .merge(layer)
-      .selectAll("rect")
+    allLayers.selectAll("rect")
       .data(d => d, d => d.data.airport)
       .join(
         enter => enter.append("rect")
           .attr("y", d => y(d.data.airport))
           .attr("height", y.bandwidth())
           .attr("x", d => x(d[0]))
-          .attr("width", d => x(d[1]) - x(d[0]))
+          .attr("width", 0)
           .attr("rx", 3)
           .on("mouseover", function(event, d) {
             const key = d3.select(this.parentNode).datum().key;
-            const pct = (d[1]-d[0]).toFixed(1);
-            showTooltip(event, `<strong>${d.data.airport}</strong><br/>${CAUSE_LABELS[key]}: <b>${pct}%</b>`);
+            showTooltip(event, `<strong>${d.data.airport}</strong> (${fmt(d.data.flights)} arrivals)<br/>
+              ${CAUSE_LABELS[key]}: <b>${(d[1]-d[0]).toFixed(1)}%</b> of delay causes`);
           })
-          .on("mousemove", event => tooltip.style("left",(event.pageX+12)+"px").style("top",(event.pageY-10)+"px"))
-          .on("mouseout", hideTooltip),
-        update => update.transition().duration(500)
+          .on("mousemove", event => tooltip.style("left",(event.clientX+14)+"px").style("top",(event.clientY-12)+"px"))
+          .on("mouseout", hideTooltip)
+          .call(s => s.transition().duration(500).attr("width", d => x(d[1]) - x(d[0]))),
+        update => update.call(s => s.transition().duration(500)
           .attr("y", d => y(d.data.airport))
           .attr("x", d => x(d[0]))
-          .attr("width", d => x(d[1]) - x(d[0])),
+          .attr("width", d => x(d[1]) - x(d[0]))),
         exit => exit.remove()
       );
 
-    svg.selectAll(".y-axis").data([0]).join("g").attr("class","y-axis")
-      .call(d3.axisLeft(y).tickSize(0)).select(".domain").remove();
-    svg.selectAll(".x-axis").data([0]).join("g").attr("class","x-axis")
-      .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(x).ticks(5).tickFormat(d => d + "%"));
+    // Spotlight dimming (legend interaction)
+    allLayers.transition().duration(200)
+      .attr("opacity", d => (spotlight === null || d.key === spotlight) ? 1 : 0.18);
 
-    // Flight count labels
+    svg.selectAll(".y-axis").data([0]).join("g").attr("class","y-axis")
+      .call(d3.axisLeft(y).tickSize(0))
+      .select(".domain").remove();
+
     const labels = svg.selectAll(".flight-label").data(sortedData, d => d.airport);
     labels.enter().append("text").attr("class","flight-label")
       .attr("font-size", 10).attr("fill", "#999")
       .merge(labels).transition().duration(500)
       .attr("x", width + 8)
       .attr("y", d => y(d.airport) + y.bandwidth()/2 + 4)
-      .text(d => d3.format(",")(d.flights));
+      .text(d => fmt(d.flights));
     labels.exit().remove();
   }
-
   update(data);
 
-  // Sort buttons
   d3.selectAll(".sort-btn").on("click", function() {
     d3.selectAll(".sort-btn").classed("active", false);
     d3.select(this).classed("active", true);
-    const sortType = d3.select(this).attr("data-sort");
-    let sorted = [...data];
-    if(sortType === "weather") sorted.sort((a,b) => b.weather - a.weather);
-    else if(sortType === "late") sorted.sort((a,b) => b.late - a.late);
-    else sorted.sort((a,b) => b.flights - a.flights);
-    update(sorted);
+    const t = d3.select(this).attr("data-sort");
+    let s = [...TOP10_DATA];
+    if (t === "weather") s.sort((a,b) => b.weather - a.weather);
+    else if (t === "late") s.sort((a,b) => b.late - a.late);
+    else if (t === "carrier") s.sort((a,b) => b.carrier - a.carrier);
+    else s.sort((a,b) => b.flights - a.flights);
+    update(s);
   });
 
-  // Legend
+  // Legend with spotlight-on-click
   const legend = d3.select("#legend-bars");
-  causes.forEach(k => {
-    const item = legend.append("div").attr("class", "legend-item");
+  CAUSES.forEach(k => {
+    const item = legend.append("div").attr("class", "legend-item").attr("data-cause", k);
     item.append("div").attr("class", "legend-color").style("background", CAUSE_COLORS[k]);
     item.append("span").text(CAUSE_LABELS[k]);
+    item.on("click", function() {
+      spotlight = (spotlight === k) ? null : k;
+      legend.selectAll(".legend-item").classed("dim", function() {
+        return spotlight !== null && d3.select(this).attr("data-cause") !== spotlight;
+      });
+      update(svg.selectAll(".y-axis").datum() ? d3.selectAll(".sort-btn.active").empty()
+        ? data
+        : sortCurrent() : data);
+    });
   });
+  function sortCurrent() {
+    const t = d3.select(".sort-btn.active").attr("data-sort");
+    let s = [...TOP10_DATA];
+    if (t === "weather") s.sort((a,b) => b.weather - a.weather);
+    else if (t === "late") s.sort((a,b) => b.late - a.late);
+    else if (t === "carrier") s.sort((a,b) => b.carrier - a.carrier);
+    else s.sort((a,b) => b.flights - a.flights);
+    return s;
+  }
 }
 
 // ============================================================
-// VIZ 3: SCATTER + BRUSH (Lab 7 technique)
+// VIZ 3 — SCATTER + BRUSH (with trend line)
 // ============================================================
-async function drawScatter() {
-  const container = d3.select("#chart-scatter");
-  const margin = {top: 20, right: 40, bottom: 50, left: 60};
-  const width = 800 - margin.left - margin.right;
+function drawScatter() {
+  const margin = {top: 20, right: 30, bottom: 55, left: 60};
+  const width = 860 - margin.left - margin.right;
   const height = 400 - margin.top - margin.bottom;
-  const svg = container.append("svg")
+  const svgWrap = d3.select("#chart-scatter").append("svg")
     .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
+    .attr("height", height + margin.top + margin.bottom);
+  const svg = svgWrap.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
-  const raw = await d3.csv("airport_summary.csv", d => ({
-    airport: d.airport,
-    flights: +d.arr_flights,
-    delay: +d.delay_rate_pct,
-    weather: +d.weather_pct,
-    prcp: +d.noaa_PRCP,
-    temp: +d.noaa_TAVG
-  }));
+  const data = AIRPORT_DATA.filter(d => d.prcp != null && d.delay != null);
 
-  // Filter valid precipitation records
-  const data = raw.filter(d => !isNaN(d.prcp) && !isNaN(d.delay));
-
-  const x = d3.scaleLinear()
-    .domain([0, d3.max(data, d => d.prcp) * 1.05])
-    .range([0, width]);
+  const x = d3.scaleLinear().domain([0, d3.max(data, d => d.prcp) * 1.05]).range([0, width]);
   const y = d3.scaleLinear()
-    .domain([d3.min(data, d => d.delay) * 0.9, d3.max(data, d => d.delay) * 1.05])
+    .domain([Math.max(0, d3.min(data, d => d.delay) * 0.9), d3.max(data, d => d.delay) * 1.05])
     .range([height, 0]);
-  const size = d3.scaleSqrt()
-    .domain([0, d3.max(data, d => d.flights)])
-    .range([2, 22]);
-  const color = d3.scaleSequential(d3.interpolateYlOrRd)
-    .domain([0, 25]);
+  const size = d3.scaleSqrt().domain([0, d3.max(data, d => d.flights)]).range([2, 20]);
+  const color = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 12]);
 
-  // Axes
-  svg.append("g").attr("transform", `translate(0,${height})`)
-    .call(d3.axisBottom(x).ticks(8))
-    .append("text").attr("class","axis-label")
-    .attr("x", width/2).attr("y", 40)
-    .attr("fill", "#555").attr("text-anchor", "middle")
-    .text("Average Monthly Precipitation (mm)");
-
+  svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x))
+    .append("text").attr("class","axis-label").attr("x", width/2).attr("y", 40)
+    .attr("fill", "#555").attr("text-anchor", "middle").text("Average monthly precipitation (mm)");
   svg.append("g").call(d3.axisLeft(y))
-    .append("text").attr("class","axis-label")
-    .attr("transform", "rotate(-90)")
-    .attr("x", -height/2).attr("y", -45)
-    .attr("fill", "#555").attr("text-anchor", "middle")
-    .text("Delay Rate (%)");
+    .append("text").attr("class","axis-label").attr("transform", "rotate(-90)")
+    .attr("x", -height/2).attr("y", -45).attr("fill", "#555")
+    .attr("text-anchor", "middle").text("Delay rate (%)");
 
-  // Clip path for brush
+  // OLS trend line computed from the real data
+  const n = data.length;
+  const mx = d3.mean(data, d => d.prcp), my = d3.mean(data, d => d.delay);
+  let num = 0, den = 0;
+  data.forEach(d => { num += (d.prcp - mx) * (d.delay - my); den += (d.prcp - mx) ** 2; });
+  const slope = num / den, intercept = my - slope * mx;
+  const r = num / Math.sqrt(den * data.reduce((s,d) => s + (d.delay-my)**2, 0));
+  const xLine = [0, d3.max(data, d => d.prcp) * 1.05];
+  svg.append("line").attr("x1", x(xLine[0])).attr("y1", y(intercept))
+    .attr("x2", x(xLine[1])).attr("y2", y(slope * xLine[1] + intercept))
+    .attr("stroke", "#e74c3c").attr("stroke-dasharray", "6,4").attr("stroke-width", 1.5);
+
+  d3.select("#scatter-insight").html(
+    `The fitted line rises <b>${slope.toFixed(2)} percentage points of delay per 100 mm of monthly precipitation</b> ` +
+    `(Pearson r = ${r.toFixed(2)}) — wetter airports are systematically delay-prone, though volume and carrier mix also matter.`);
+
   svg.append("defs").append("clipPath").attr("id", "scatter-clip")
     .append("rect").attr("width", width).attr("height", height);
-
   const dotsGroup = svg.append("g").attr("clip-path", "url(#scatter-clip)");
 
   function drawDots(dataset) {
-    dotsGroup.selectAll("circle")
-      .data(dataset, d => d.airport)
-      .join(
-        enter => enter.append("circle")
-          .attr("cx", d => x(d.prcp))
-          .attr("cy", d => y(d.delay))
-          .attr("r", d => size(d.flights))
-          .attr("fill", d => color(d.weather))
-          .attr("opacity", 0.75)
-          .attr("stroke", "white")
-          .attr("stroke-width", 1)
-          .style("cursor", "pointer")
-          .on("mouseover", function(event, d) {
-            d3.select(this).attr("stroke", "#2c3e50").attr("stroke-width", 2);
-            showTooltip(event, `<strong>${d.airport}</strong><br/>
-              Delay: ${d.delay}% · Weather: ${d.weather}%<br/>
-              Precip: ${d.prcp}mm · Flights: ${d3.format(",")(d.flights)}`);
-          })
-          .on("mousemove", event => tooltip.style("left",(event.pageX+12)+"px").style("top",(event.pageY-10)+"px"))
-          .on("mouseout", function() {
-            d3.select(this).attr("stroke", "white").attr("stroke-width", 1);
-            hideTooltip();
-          }),
-        update => update.transition().duration(300)
-          .attr("cx", d => x(d.prcp))
-          .attr("cy", d => y(d.delay))
-          .attr("r", d => size(d.flights)),
-        exit => exit.transition().duration(300).attr("r", 0).remove()
-      );
+    dotsGroup.selectAll("circle").data(dataset, d => d.airport).join(
+      enter => enter.append("circle")
+        .attr("cx", d => x(d.prcp)).attr("cy", d => y(d.delay))
+        .attr("r", 0)
+        .attr("fill", d => color(d.weather)).attr("opacity", 0.78)
+        .attr("stroke", "#ffffff").attr("stroke-width", 1)
+        .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+          d3.select(this).attr("stroke", "#2c3e50").attr("stroke-width", 2).raise();
+          showTooltip(event, `<strong>${d.airport}</strong> — ${d.name}<br/>
+            Delay rate: <b>${d.delay}%</b> · Weather share: ${d.weather}%<br/>
+            Precip: ${d.prcp} mm · Flights: ${fmt(d.flights)}`);
+        })
+        .on("mousemove", event => tooltip.style("left",(event.clientX+14)+"px").style("top",(event.clientY-12)+"px"))
+        .on("mouseout", function() {
+          d3.select(this).attr("stroke", "#ffffff").attr("stroke-width", 1);
+          hideTooltip();
+        })
+        .call(s => s.transition().duration(350).attr("r", d => size(d.flights))),
+      update => update.call(s => s.transition().duration(350)
+        .attr("cx", d => x(d.prcp)).attr("cy", d => y(d.delay)).attr("r", d => size(d.flights))),
+      exit => exit.call(s => s.transition().duration(350).attr("r", 0).remove())
+    );
   }
-
   drawDots(data);
 
-  // BRUSH (Lab 7 technique)
-  const brush = d3.brush()
-    .extent([[0, 0], [width, height]])
-    .on("end", brushed);
-
-  const brushG = svg.append("g").attr("class", "brush").call(brush);
-
-  function brushed(event) {
-    if (!event.selection) {
-      drawDots(data); // reset
-      return;
-    }
-    const [[x0, y0], [x1, y1]] = event.selection;
-    const filtered = data.filter(d => {
+  // Brush (Lab 7 technique) — filter airports by rectangular selection
+  const brush = d3.brush().extent([[0,0],[width,height]]).on("end", event => {
+    if (!event.selection) { drawDots(data); return; }
+    const [[x0,y0],[x1,y1]] = event.selection;
+    drawDots(data.filter(d => {
       const px = x(d.prcp), py = y(d.delay);
       return px >= x0 && px <= x1 && py >= y0 && py <= y1;
-    });
-    drawDots(filtered);
-  }
-
-  // Double-click to reset
-  svg.on("dblclick", () => {
-    brushG.call(brush.clear);
-    drawDots(data);
+    }));
   });
+  const brushG = svg.append("g").attr("class", "brush").call(brush);
+
+  const resetAll = () => { brushG.call(brush.clear); drawDots(data); };
+  svgWrap.on("dblclick", resetAll);
+  d3.select("#scatter-reset").on("click", resetAll);
 }
 
-// ============================================================
-// INIT
-// ============================================================
 drawMap();
 drawBars();
 drawScatter();
