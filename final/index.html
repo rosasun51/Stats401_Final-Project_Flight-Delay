@@ -3,95 +3,265 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weather Drivers of Flight Delays Across U.S. Airports — Final Dashboard</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<title>Flight Delay Analysis — STATS 401 Final Project</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-  * { box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; background: #f5f6f8; margin: 0; padding: 20px; color: #2c3e50; }
-  h1 { text-align: center; font-size: 24px; margin-bottom: 6px; }
-  .subtitle { text-align: center; color: #7f8c8d; font-size: 14px; margin-bottom: 10px; }
-  .viz-container { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    padding: 20px; margin: 0 auto 30px; max-width: 1240px; position: relative; }
-  .viz-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-  .viz-desc { font-size: 12px; color: #7f8c8d; margin-bottom: 14px; }
-  .viz-insight { font-size: 12px; color: #34495e; background: #eaf2f8; border-left: 3px solid #3498db;
-    padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 14px; }
-  .open-link { font-size: 12px; font-weight: 400; margin-left: 10px; }
-  .open-link a { color: #3498db; text-decoration: none; }
-  .open-link a:hover { text-decoration: underline; }
-  iframe { width: 100%; border: none; display: block; background: #ffffff; border-radius: 8px; }
+:root {
+  --ink: #14324e;
+  --muted: #587188;
+  --teal: #0d9daa;
+  --line: #d4e4ec;
+  --bg: #f7fafc;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.55;
+}
 
-  /* ---- Sticky navigation bar (unified chrome) ---- */
-  .topnav { position: sticky; top: 0; z-index: 999; background: #ffffff; border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08); max-width: 1240px; margin: 0 auto 24px;
-    padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .topnav .brand { font-size: 13px; font-weight: 700; margin-right: auto; color: #2c3e50; }
-  .topnav a { font-size: 12px; color: #34495e; text-decoration: none; padding: 6px 12px;
-    border-radius: 6px; background: #ecf0f1; transition: background 0.2s; }
-  .topnav a:hover { background: #d5dbdb; }
-  .datnote { max-width: 1240px; margin: 0 auto 30px; font-size: 12px; color: #7f8c8d; text-align: center; }
-  .footer { text-align: center; font-size: 12px; color: #95a5a6; margin: 10px 0 30px; }
+/* ---------- Header (matches Rosa's palette) ---------- */
+header {
+  background: linear-gradient(135deg, #14324e 0%, #1a4d6b 100%);
+  color: #ffffff;
+  padding: 40px max(24px, calc((100vw - 1400px) / 2)) 48px;
+}
+.brand {
+  font-size: 12px;
+  letter-spacing: 3px;
+  font-weight: 700;
+  color: #4fc3d9;
+  text-transform: uppercase;
+}
+h1 {
+  font-size: clamp(28px, 3.5vw, 42px);
+  margin: 16px 0 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+header p {
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 960px;
+  color: #b8d4e3;
+  margin: 0;
+}
+
+/* ---------- Sticky section nav ---------- */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffff;
+  border-bottom: 1px solid var(--line);
+  padding: 12px max(24px, calc((100vw - 1400px) / 2));
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 4px rgba(20, 50, 78, 0.04);
+}
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+}
+nav a:hover {
+  color: var(--teal);
+  border-bottom-color: var(--teal);
+}
+
+/* ---------- Main layout ---------- */
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+.viz-section {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  margin-bottom: 32px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(20, 50, 78, 0.06);
+}
+.viz-header {
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+}
+.viz-number {
+  display: inline-block;
+  background: var(--teal);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+.viz-header h2 {
+  font-size: 22px;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.viz-header .desc {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 960px;
+  margin: 0;
+}
+
+/* ---------- Embedded frames ---------- */
+.viz-frame {
+  width: 100%;
+  border: none;
+  display: block;
+  background: #ffffff;
+  min-height: 700px;
+}
+
+footer {
+  text-align: center;
+  padding: 32px 24px 48px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+}
+
+@media (max-width: 700px) {
+  header { padding: 32px 18px 36px; }
+  nav { padding: 10px 14px; gap: 14px; }
+  main { padding: 20px 10px 40px; }
+  .viz-header { padding: 18px 18px 12px; }
+}
 </style>
 </head>
 <body>
 
-<h1>Weather Drivers of Flight Delays Across U.S. Airports</h1>
-<div class="subtitle">STATS 401 Final Project · BTS On-Time Performance + NOAA weather · 224 U.S. airports, Jan 2020 – Jun 2026 · 30.8M arrivals</div>
+<header>
+  <div class="brand">STATS 401 · Final Project</div>
+  <h1>Flight Delay Analysis: Geography, Causes, Weather, and Carriers</h1>
+  <p>
+    A coordinated visual investigation of U.S. flight disruptions from January 2020 to June 2026,
+    built from 146,438 cleaned carrier–airport–month records merged with NOAA weather observations.
+    The dashboard moves from geographic overview to cause decomposition, weather association, and carrier comparison.
+  </p>
+</header>
 
-<div class="topnav">
-  <span class="brand">Flight Delay Dashboard</span>
-  <a href="#yuxuan">1 · Weather-Delay Associations</a>
-  <a href="#xinyi">2 · Airline Performance</a>
-  <a href="#ruisheng">3 · Airport Delay Map</a>
-  <a href="#ruisheng">4 · Delay Causes</a>
-  <a href="#ruisheng">5 · Weather vs. Delay</a>
-</div>
+<nav aria-label="Section navigation">
+  <a href="#viz-rosa">Delay Map · Cause Composition · Weather Scatter</a>
+  <a href="#viz-xinyi">Airline Performance</a>
+  <a href="#viz-yuxuan">Weather Association Profile</a>
+</nav>
 
-<div class="viz-container">
-  <div class="viz-insight" style="margin-bottom:0">
-    <b>How to read this dashboard.</b> Weather–delay associations are strongly seasonal — monthly Spearman
-    |ρ| frequently exceeds 0.5 for snowfall and precipitation in winter but collapses in summer — while at
-    the biggest hubs delays are dominated by late-arriving aircraft (34.4% of delay causes) rather than local
-    weather (national median 5.5%). Explore each view below, or open any view in a full tab.
-  </div>
-</div>
+<main>
 
-<!-- ============ SECTION 1: Yuxuan Zhou — Weather-Driver Profile ============ -->
-<div class="viz-container" id="yuxuan">
-  <div class="viz-title">1. Weather-Driver Profile — Impact Overview, Association Network &amp; Airport Table
-    <span class="open-link"><a href="../yuxuan/index.html" target="_blank">Open full page ↗</a></span>
-  </div>
-  <div class="viz-desc">Mean |Spearman ρ| heatmap by weather factor × month · geographic network linking airports with the same dominant weather factor · sortable, searchable airport table. Use the global controls (outcome, association window, airline, airport), the timeline playback, the |ρ| threshold slider, and click a heatmap cell or table row to filter/highlight the network. CSV upload fallback is available at the top of the embedded page.</div>
-  <iframe src="../yuxuan/index.html" height="3050" title="Weather-Driver Profile (Yuxuan Zhou)"></iframe>
-</div>
+  <section class="viz-section" id="viz-rosa">
+    <div class="viz-header">
+      <span class="viz-number">VISUALIZATIONS 1–3</span>
+      <h2>Where Delays Concentrate, What Causes Them, and How Weather Relates</h2>
+      <p class="desc">
+        The U.S. airport delay map (bubble size = arrivals; color = delay rate or weather-delay share),
+        the cause-composition breakdown for the ten busiest airports (sortable and spotlightable),
+        and the precipitation–delay scatter plot with brushing and a fitted trend line.
+      </p>
+    </div>
+    <iframe class="viz-frame" src="../rosa/index.html"
+            title="Rosa — Visualizations 1-3"
+            loading="lazy"></iframe>
+  </section>
 
-<!-- ============ SECTION 2: Xinyi Liu — Airline Performance ============ -->
-<div class="viz-container" id="xinyi">
-  <div class="viz-title">2. Airline Scale &amp; Reliability
-    <span class="open-link"><a href="../xinyi/index.html" target="_blank">Open full page ↗</a></span>
-  </div>
-  <div class="viz-desc">One point per carrier: reported flights (x) vs. flight-weighted on-time rate (y), with date-range and airport filters, click-to-pin details, airline highlighting, a 0–100% axis toggle, and CSV export of the current selection.</div>
-  <iframe src="../xinyi/index.html" height="1750" title="Airline Performance (Xinyi Liu)"></iframe>
-</div>
+  <section class="viz-section" id="viz-xinyi">
+    <div class="viz-header">
+      <span class="viz-number">VISUALIZATION 4</span>
+      <h2>Airline Performance: Reported Flight Volume vs. On-Time Rate</h2>
+      <p class="desc">
+        Twenty-five carriers aggregated from all 146,438 cleaned records. Horizontal position encodes total
+        reported flights; vertical position encodes the flight-weighted on-time rate. The embedded view
+        provides date and airport filters, pinned carrier details, highlighting, axis toggle, reset, and CSV export.
+      </p>
+    </div>
+    <iframe class="viz-frame" src="../xinyi/index.html"
+            title="Xinyi — Visualization 4"
+            loading="lazy"></iframe>
+  </section>
 
-<!-- ============ SECTION 3-5: Ruisheng Sun — Map / Causes / Weather Scatter ============ -->
-<div class="viz-container" id="ruisheng">
-  <div class="viz-title">3–5. Airport Delay Map · Delay Causes · Weather vs. Delay Rate
-    <span class="open-link"><a href="../rosa/index.html" target="_blank">Open full page ↗</a></span>
-  </div>
-  <div class="viz-desc">Three coordinated views: a U.S. bubble map (zoom/pan, metric toggle, tooltips), 100% stacked bars of delay-cause composition at the ten busiest hubs (sort buttons, legend spotlight), and a precipitation-vs-delay scatterplot with brush filtering, a fitted trend line, and reset. All insights are computed live from the data.</div>
-  <iframe src="../rosa/index.html" height="2350" title="Airport delay map, delay causes, and weather scatter (Ruisheng Sun)"></iframe>
-</div>
+  <section class="viz-section" id="viz-yuxuan">
+    <div class="viz-header">
+      <span class="viz-number">VISUALIZATION 5</span>
+      <h2>Weather Association Profile: Heatmap, Network, and Sortable Table</h2>
+      <p class="desc">
+        Mean absolute Spearman correlation between each weather factor and the selected disruption
+        outcome, aggregated across airports over a chosen historical window. The geographic similarity
+        network connects airports sharing the same dominant factor and correlation direction; the sortable
+        table and monthly playback timeline support detailed exploration.
+      </p>
+    </div>
+    <iframe class="viz-frame" src="../yuxuan/index.html"
+            title="Yuxuan — Weather Association Profile"
+            loading="lazy"></iframe>
+  </section>
 
-<div class="datnote">
-  Data: <code>data/airport_weather_monthly.csv</code> (224 airports × 78 months) and
-  <code>data/flight_weather_monthly.csv</code> (carrier-level). If an embedded view reports a data-loading
-  error on GitHub Pages, use the CSV-upload control inside that view (large CSVs may exceed the repository
-  size limit; see README for the processing pipeline that regenerates them).
-</div>
+</main>
 
-<div class="footer">Ruisheng Sun · Xinyi Liu · Yuxuan Zhou — STATS 401 Data Visualization, Final Group Project</div>
+<footer>
+  U.S. Bureau of Transportation Statistics · NOAA Global Summary of the Month · STATS 401 Final Project
+</footer>
+
+<script>
+/* -----------------------------------------------------------------
+   Auto-size each embedded visualization to its content height.
+   Because all pages are served from the same GitHub Pages origin,
+   the parent can read contentDocument. If the browser blocks the
+   read (e.g., file:// in some browsers), we fall back to the
+   CSS min-height of 700px and the user can scroll inside the frame.
+------------------------------------------------------------------ */
+function resizeAllFrames() {
+  document.querySelectorAll('iframe.viz-frame').forEach(function (iframe) {
+    try {
+      var doc = iframe.contentWindow.document;
+      if (!doc || !doc.body) return;
+      var h = Math.max(
+        doc.body.scrollHeight, doc.body.offsetHeight,
+        doc.documentElement.clientHeight,
+        doc.documentElement.scrollHeight,
+        doc.documentElement.offsetHeight
+      );
+      if (h && h > 0) iframe.style.height = h + 'px';
+    } catch (e) {
+      /* Cross-origin or file:// — ignore, use CSS fallback. */
+    }
+  });
+}
+
+document.querySelectorAll('iframe.viz-frame').forEach(function (iframe) {
+  iframe.addEventListener('load', function () {
+    resizeAllFrames();
+    /* Re-run a few times to catch late-rendered content
+       (e.g., CSV-driven views in Yuxuan's page). */
+    setTimeout(resizeAllFrames, 400);
+    setTimeout(resizeAllFrames, 1500);
+    setTimeout(resizeAllFrames, 3000);
+  });
+});
+
+window.addEventListener('resize', resizeAllFrames);
+
+/* Re-measure when a nav link scrolls to a section. */
+document.querySelectorAll('nav a').forEach(function (a) {
+  a.addEventListener('click', function () {
+    setTimeout(resizeAllFrames, 200);
+  });
+});
+</script>
 
 </body>
 </html>
